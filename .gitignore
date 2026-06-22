@@ -26,4 +26,7 @@ out/
 .DS_Store
 
 ### Kotlin ###
+### Kotlin ###
 .kotlin/
+
+allure-report/

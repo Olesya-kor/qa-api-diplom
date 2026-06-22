@@ -5,15 +5,14 @@ import io.qameta.allure.Description;
 import io.qameta.allure.Step;
 import model.OrderRequest;
 import model.User;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Test;
 import utils.Constants;
 import utils.UserGenerator;
 
-
 import java.util.Arrays;
 import java.util.Collections;
-
 
 import static org.hamcrest.Matchers.equalTo;
 
@@ -24,7 +23,9 @@ public class CreateOrderTest extends BaseTest {
     private OrderRequest validOrder() {
 
         return new OrderRequest(
-                Arrays.asList(Constants.INGREDIENT_HASH)
+                Arrays.asList(
+                        Constants.INGREDIENT_HASH
+                )
         );
     }
 
@@ -37,13 +38,14 @@ public class CreateOrderTest extends BaseTest {
     }
 
 
-    private OrderRequest invalidOrder() {
+    private OrderRequest wrongHashOrder() {
 
         return new OrderRequest(
-                Arrays.asList("invalid_hash")
+                Collections.singletonList(
+                        "60d3b41abdac0026a733c7"
+                )
         );
     }
-
 
 
     @Step("Создать пользователя и получить токен")
@@ -53,102 +55,103 @@ public class CreateOrderTest extends BaseTest {
 
         accessToken =
                 userClient.createUser(user)
-                        .statusCode(200)
+                        .statusCode(
+                                HttpStatus.SC_OK
+                        )
                         .extract()
                         .path("accessToken");
     }
-
-
 
 
     @Test
     @Description("Проверка создания заказа авторизованным пользователем")
     public void createOrderWithAuthorizationSuccess() {
 
-
         createUser();
-
 
         orderClient.createOrderAuthorized(
                         validOrder(),
                         accessToken
                 )
-                .statusCode(200)
-                .body("success", equalTo(true));
+                .statusCode(
+                        HttpStatus.SC_OK
+                )
+                .body(
+                        "success",
+                        equalTo(true)
+                );
     }
-
-
-
 
 
     @Test
     @Description("Проверка создания заказа без авторизации")
     public void createOrderWithoutAuthorizationSuccess() {
 
-
         orderClient.createOrder(validOrder())
-                .statusCode(200)
-                .body("success", equalTo(true));
-
+                .statusCode(
+                        HttpStatus.SC_OK
+                )
+                .body(
+                        "success",
+                        equalTo(true)
+                );
     }
-
-
-
 
 
     @Test
-    @Description("Проверка создания заказа с корректным ингредиентом")
+    @Description("Проверка создания заказа с ингредиентами")
     public void createOrderWithIngredientsSuccess() {
 
-
         orderClient.createOrder(validOrder())
-                .statusCode(200)
-                .body("success", equalTo(true));
-
+                .statusCode(
+                        HttpStatus.SC_OK
+                )
+                .body(
+                        "success",
+                        equalTo(true)
+                );
     }
-
-
-
 
 
     @Test
     @Description("Проверка ошибки создания заказа без ингредиентов")
     public void createOrderWithoutIngredientsShouldReturn400() {
 
-
         orderClient.createOrder(emptyOrder())
-                .statusCode(400);
-
+                .statusCode(
+                        HttpStatus.SC_BAD_REQUEST
+                )
+                .body(
+                        "success",
+                        equalTo(false)
+                )
+                .body(
+                        "message",
+                        equalTo(
+                                "Ingredient ids must be provided"
+                        )
+                );
     }
-
-
-
 
 
     @Test
-    @Description("Проверка ошибки создания заказа с неверным ингредиентом")
-    public void createOrderWithInvalidIngredientHashShouldReturn400() {
+    @Description("Проверка ошибки создания заказа с неверным хешем ингредиента")
+    public void createOrderWithWrongHashShouldReturn500() {
 
-
-        orderClient.createOrder(invalidOrder())
-                .statusCode(400);
-
+        orderClient.createOrder(wrongHashOrder())
+                .statusCode(
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR
+                );
     }
-
-
-
 
 
     @After
     public void deleteUser() {
 
-
-        if(accessToken != null) {
+        if (accessToken != null) {
 
             userClient.deleteUser(accessToken);
 
         }
-
     }
-
 }

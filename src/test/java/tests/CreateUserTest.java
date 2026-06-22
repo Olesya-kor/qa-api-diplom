@@ -7,13 +7,11 @@ import org.junit.After;
 import org.junit.Test;
 import utils.UserGenerator;
 
-
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.Matchers.equalTo;
 
 
-
 public class CreateUserTest extends BaseTest {
-
 
 
     @Test
@@ -27,7 +25,7 @@ public class CreateUserTest extends BaseTest {
 
         accessToken =
                 userClient.createUser(user)
-                        .statusCode(200)
+                        .statusCode(SC_OK)
                         .body(
                                 "success",
                                 equalTo(true)
@@ -36,9 +34,6 @@ public class CreateUserTest extends BaseTest {
                         .path("accessToken");
 
     }
-
-
-
 
 
     @Test
@@ -50,17 +45,15 @@ public class CreateUserTest extends BaseTest {
                 UserGenerator.getRandomUser();
 
 
-
         accessToken =
                 userClient.createUser(user)
-                        .statusCode(200)
+                        .statusCode(SC_OK)
                         .extract()
                         .path("accessToken");
 
 
-
         userClient.createUser(user)
-                .statusCode(403)
+                .statusCode(SC_FORBIDDEN)
                 .body(
                         "success",
                         equalTo(false)
@@ -73,25 +66,20 @@ public class CreateUserTest extends BaseTest {
     }
 
 
-
-
-
     @Test
-    @Description("Проверка ошибки создания пользователя без обязательного поля")
-    public void createUserWithoutRequiredFieldShouldReturn403() {
+    @Description("Проверка ошибки создания пользователя без email")
+    public void createUserWithoutEmailShouldReturn403() {
 
 
         User user =
-                new User(
-                        null,
-                        "password123",
-                        "name"
-                );
+                UserGenerator.getRandomUser();
 
+
+        user.setEmail(null);
 
 
         userClient.createUser(user)
-                .statusCode(403)
+                .statusCode(SC_FORBIDDEN)
                 .body(
                         "success",
                         equalTo(false)
@@ -106,7 +94,60 @@ public class CreateUserTest extends BaseTest {
     }
 
 
+    @Test
+    @Description("Проверка ошибки создания пользователя без password")
+    public void createUserWithoutPasswordShouldReturn403() {
 
+
+        User user =
+                UserGenerator.getRandomUser();
+
+
+        user.setPassword(null);
+
+
+        userClient.createUser(user)
+                .statusCode(SC_FORBIDDEN)
+                .body(
+                        "success",
+                        equalTo(false)
+                )
+                .body(
+                        "message",
+                        equalTo(
+                                "Email, password and name are required fields"
+                        )
+                );
+
+    }
+
+
+    @Test
+    @Description("Проверка ошибки создания пользователя без name")
+    public void createUserWithoutNameShouldReturn403() {
+
+
+        User user =
+                UserGenerator.getRandomUser();
+
+
+        user.setName(null);
+
+
+        userClient.createUser(user)
+                .statusCode(SC_FORBIDDEN)
+                .body(
+                        "success",
+                        equalTo(false)
+                )
+                .body(
+                        "message",
+                        equalTo(
+                                "Email, password and name are required fields"
+                        )
+                );
+
+    }
 
 
     @After

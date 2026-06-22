@@ -5,10 +5,13 @@ import io.qameta.allure.Description;
 import model.LoginRequest;
 import model.User;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import utils.UserGenerator;
 
 
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -17,23 +20,32 @@ import static org.hamcrest.Matchers.notNullValue;
 public class LoginTest extends BaseTest {
 
 
-
-    @Test
-    @Description("Проверка успешной авторизации существующего пользователя")
-    public void loginExistingUserSuccess() {
+    private User user;
 
 
-        User user =
+
+    @Before
+    public void createUser() {
+
+
+        user =
                 UserGenerator.getRandomUser();
-
 
 
         accessToken =
                 userClient.createUser(user)
-                        .statusCode(200)
+                        .statusCode(SC_OK)
                         .extract()
                         .path("accessToken");
 
+    }
+
+
+
+
+    @Test
+    @Description("Проверка успешной авторизации существующего пользователя")
+    public void loginExistingUserSuccess() {
 
 
         LoginRequest loginRequest =
@@ -43,9 +55,8 @@ public class LoginTest extends BaseTest {
                 );
 
 
-
         userClient.login(loginRequest)
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body(
                         "success",
                         equalTo(true)
@@ -66,19 +77,6 @@ public class LoginTest extends BaseTest {
     public void loginWithWrongPasswordShouldReturn401() {
 
 
-        User user =
-                UserGenerator.getRandomUser();
-
-
-
-        accessToken =
-                userClient.createUser(user)
-                        .statusCode(200)
-                        .extract()
-                        .path("accessToken");
-
-
-
         LoginRequest loginRequest =
                 new LoginRequest(
                         user.getEmail(),
@@ -86,9 +84,37 @@ public class LoginTest extends BaseTest {
                 );
 
 
+        userClient.login(loginRequest)
+                .statusCode(SC_UNAUTHORIZED)
+                .body(
+                        "success",
+                        equalTo(false)
+                )
+                .body(
+                        "message",
+                        equalTo("email or password are incorrect")
+                );
+
+    }
+
+
+
+
+
+    @Test
+    @Description("Проверка ошибки авторизации с неверным логином")
+    public void loginWithWrongEmailShouldReturn401() {
+
+
+        LoginRequest loginRequest =
+                new LoginRequest(
+                        "wrong@email.com",
+                        user.getPassword()
+                );
+
 
         userClient.login(loginRequest)
-                .statusCode(401)
+                .statusCode(SC_UNAUTHORIZED)
                 .body(
                         "success",
                         equalTo(false)
